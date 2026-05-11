@@ -42,6 +42,11 @@ tests:
           - if not exist %LIBRARY_BIN%\\Qt6OpcUa.dll exit 1
 
 about:
-  license: LGPL-3.0-only
-  license_file: LICENSES/LGPL-3.0-only.txt
-  summary: Qt6 OpcUa Libraries
+  summary: Qt OPC UA module
+  description: |
+    The Qt OPC UA module implements a Qt API to interact 
+    with OPC UA servers on top of the open62541 library.
+  license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+  license_file: LICENSES/
+  documentation: https://doc.qt.io/qt-6/qtopcua-index.html
+  repository: https://github.com/qt/qtopcua

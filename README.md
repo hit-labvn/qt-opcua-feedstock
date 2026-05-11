@@ -5,9 +5,16 @@ Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/qt-opcua-feedst
 
 
 
-Package license: LGPL-3.0-only
+Package license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-Summary: Qt6 OpcUa Libraries
+Summary: Qt OPC UA module
+
+Development: https://github.com/qt/qtopcua
+
+Documentation: https://doc.qt.io/qt-6/qtopcua-index.html
+
+The Qt OPC UA module implements a Qt API to interact 
+with OPC UA servers on top of the open62541 library.
 
 Current build status
 ====================
