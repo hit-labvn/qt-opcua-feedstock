@@ -4,10 +4,10 @@
 "$schema" = "https://pixi.sh/v0.59.0/schema/manifest/schema.json"
 
 [workspace]
-name = "packaging-feedstock"
+name = "qt-opcua-feedstock"
 version = "3.61.2"  # conda-smithy version used to generate this file
-description = "Pixi configuration for conda-forge/packaging-feedstock"
-authors = ["@conda-forge/packaging"]
+description = "Pixi configuration for conda-forge/qt-opcua-feedstock"
+authors = ["@conda-forge/qt-opcua"]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "win-64"]
 requires-pixi = ">=0.59.0"
@@ -22,13 +22,25 @@ cmd = "inspect_artifacts --all-packages"
 description = "List contents of all packages found in rattler-build build directory."
 [tasks.build]
 cmd = "rattler-build build --recipe recipe"
-description = "Build packaging-feedstock directly (without setup scripts), no particular variant specified"
+description = "Build qt-opcua-feedstock directly (without setup scripts), no particular variant specified"
 [tasks."build-linux_64_"]
 cmd = "rattler-build build --recipe recipe -m .ci_support/linux_64_.yaml"
-description = "Build packaging-feedstock with variant linux_64_ directly (without setup scripts)"
+description = "Build qt-opcua-feedstock with variant linux_64_ directly (without setup scripts)"
 [tasks."inspect-linux_64_"]
 cmd = "inspect_artifacts --recipe-dir recipe -m .ci_support/linux_64_.yaml"
-description = "List contents of packaging-feedstock packages built for variant linux_64_"
+description = "List contents of qt-opcua-feedstock packages built for variant linux_64_"
+[tasks."build-osx_64_"]
+cmd = "rattler-build build --recipe recipe -m .ci_support/osx_64_.yaml"
+description = "Build qt-opcua-feedstock with variant osx_64_ directly (without setup scripts)"
+[tasks."inspect-osx_64_"]
+cmd = "inspect_artifacts --recipe-dir recipe -m .ci_support/osx_64_.yaml"
+description = "List contents of qt-opcua-feedstock packages built for variant osx_64_"
+[tasks."build-win_64_"]
+cmd = "rattler-build build --recipe recipe -m .ci_support/win_64_.yaml"
+description = "Build qt-opcua-feedstock with variant win_64_ directly (without setup scripts)"
+[tasks."inspect-win_64_"]
+cmd = "inspect_artifacts --recipe-dir recipe -m .ci_support/win_64_.yaml"
+description = "List contents of qt-opcua-feedstock packages built for variant win_64_"
 
 [feature.smithy.dependencies]
 conda-smithy = "*"

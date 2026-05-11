@@ -1,48 +1,47 @@
 schema_version: 1
 
 context:
-  version: "26.2"
-  python_min: "3.8"
+  version: 6.8.3
+  mbedtls_version: 3.*
 
 package:
-  name: packaging
+  name: qt6-opcua
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/packaging/packaging-${{ version }}.tar.gz
-  sha256: ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661
+  git: https://github.com/qt/qtopcua
+  tag: v${{ version }}
 
 build:
   number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  prefix_detection:
+    ignore_binary_files: true
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - qt6-main ${{ version }}.*
+        - mbedtls ${{ mbedtls_version }}
+    - cmake
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
   host:
-    - python ${{ python_min }}.*
-    - flit-core >=3.12
-    - pip
+    - qt6-main ${{ version }}.*
+    - mbedtls ${{ mbedtls_version }}
   run:
-    - python >=${{ python_min }}
-
+    - qt6-main ${{ version }}.*
+  run_exports:
+    - ${{ pin_subpackage('qt6-opcua', upper_bound='x.x') }}
 tests:
-  - python:
-      imports:
-        - packaging
-      pip_check: true
-      python_version: ${{ python_min }}.*
+  - script:
+      - if: win
+        then: 
+          - if not exist %LIBRARY_LIB%\\qt6\\bin\\Qt6OpcUa.dll exit 1
+          - if not exist %LIBRARY_BIN%\\Qt6OpcUa.dll exit 1
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
-  summary: Core utilities for Python packages
-  homepage: https://github.com/pypa/packaging
-  repository: https://github.com/pypa/packaging
-  documentation: https://packaging.pypa.io/
-
-extra:
-  recipe-maintainers:
-    - jakirkham
-    - nicoddemus
-    - matthewfeickert
-    - ofek
+  license: LGPL-3.0-only
+  license_file: LICENSES/LGPL-3.0-only.txt
+  summary: Qt6 OpcUa Libraries
