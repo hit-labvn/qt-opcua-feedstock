@@ -8,6 +8,9 @@ on:
 
   pull_request:
 
+  release:
+    types: [published]
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
@@ -24,13 +27,13 @@ jobs:
         include:
           - CONFIG: linux_64_
             STORE_BUILD_ARTIFACTS: False
-            UPLOAD_PACKAGES: True
+            UPLOAD_PACKAGES: False
             os: ubuntu
             runs_on: ['ubuntu-latest']
             DOCKER_IMAGE: quay.io/condaforge/linux-anvil-x86_64:alma9
           - CONFIG: win_64_
             STORE_BUILD_ARTIFACTS: False
-            UPLOAD_PACKAGES: True
+            UPLOAD_PACKAGES: False
             os: windows
             runs_on: ['windows-latest']
     steps:
@@ -69,30 +72,6 @@ jobs:
         echo "::endgroup::"
         ./.scripts/run_docker_build.sh
 
-    - name: Build on macOS
-      id: build-macos
-      if: matrix.os == 'macos'
-      env:
-        CONFIG: ${{ matrix.CONFIG }}
-        UPLOAD_PACKAGES: ${{ matrix.UPLOAD_PACKAGES }}
-        CI: github_actions
-        BINSTAR_TOKEN: ${{ secrets.BINSTAR_TOKEN }}
-        FEEDSTOCK_TOKEN: ${{ secrets.FEEDSTOCK_TOKEN }}
-        STAGING_BINSTAR_TOKEN: ${{ secrets.STAGING_BINSTAR_TOKEN }}
-      shell: bash
-      run: |
-        export flow_run_id="github_$GITHUB_RUN_ID"
-        export remote_url="https://github.com/$GITHUB_REPOSITORY"
-        export sha="$GITHUB_SHA"
-        export FEEDSTOCK_NAME="$(basename $GITHUB_REPOSITORY)"
-        export GIT_BRANCH="$(basename $GITHUB_REF)"
-        if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-          export IS_PR_BUILD="True"
-        else
-          export IS_PR_BUILD="False"
-        fi
-        ./.scripts/run_osx_build.sh
-
     - name: Build on windows
       id: build-windows
       if: matrix.os == 'windows'
@@ -114,3 +93,65 @@ jobs:
         BINSTAR_TOKEN: ${{ secrets.BINSTAR_TOKEN }}
         FEEDSTOCK_TOKEN: ${{ secrets.FEEDSTOCK_TOKEN }}
         STAGING_BINSTAR_TOKEN: ${{ secrets.STAGING_BINSTAR_TOKEN }}
+
+    - name: Store Linux package artifact
+      if: matrix.os == 'ubuntu'
+      uses: actions/upload-artifact@v4
+      with:
+        name: conda-package-${{ matrix.CONFIG }}
+        path: build_artifacts/linux-64/*.conda
+        if-no-files-found: error
+
+    - name: Store Windows package artifact
+      if: matrix.os == 'windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: conda-package-${{ matrix.CONFIG }}
+        path: C:\bld\win-64\*.conda
+        if-no-files-found: error
+
+  upload-prefix:
+    name: Upload to prefix.dev
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Download package artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: conda-package-*
+        path: dist
+        merge-multiple: true
+
+    - name: Install pixi
+      shell: bash
+      run: |
+        curl -fsSL https://pixi.sh/install.sh | bash
+        echo "$HOME/.pixi/bin" >> "$GITHUB_PATH"
+
+    - name: Upload packages to prefix.dev
+      shell: bash
+      env:
+        PREFIX_API_KEY: ${{ secrets.PREFIX_API_KEY }}
+        PREFIX_CHANNEL: ${{ secrets.PREFIX_CHANNEL }}
+      run: |
+        if [ -z "${PREFIX_API_KEY}" ]; then
+          echo "PREFIX_API_KEY is not set"
+          exit 1
+        fi
+        if [ -z "${PREFIX_CHANNEL}" ]; then
+          echo "PREFIX_CHANNEL is not set"
+          exit 1
+        fi
+        pixi install
+        shopt -s globstar nullglob
+        packages=(dist/**/*.conda)
+        if [ "${#packages[@]}" -eq 0 ]; then
+          echo "No .conda artifacts found"
+          exit 1
+        fi
+        pixi run rattler-build upload prefix --channel "${PREFIX_CHANNEL}" --skip-existing "${packages[@]}"
