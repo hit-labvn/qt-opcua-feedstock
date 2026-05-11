@@ -18,6 +18,7 @@ concurrency:
 jobs:
   build:
     name: ${{ matrix.CONFIG }}
+    environment: prefix-dev
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 360
     strategy:
@@ -104,7 +105,10 @@ jobs:
         curl -fsSL https://pixi.sh/install.sh | bash
         pixi="$HOME/.pixi/bin/pixi"
         "$pixi" install
-        "$pixi" run rattler-build upload prefix --channel "${PREFIX_CHANNEL}" --skip-existing build_artifacts/linux-64/*.conda
+        for package in build_artifacts/linux-64/*.conda; do
+          # ignore errors because we want to ignore duplicate packages
+          "$pixi" run rattler-build upload prefix -c "${PREFIX_CHANNEL}" "${package}" || true
+        done
 
     - name: Upload Windows package to prefix.dev
       if: matrix.os == 'windows' && github.event_name == 'release'
@@ -114,4 +118,8 @@ jobs:
         PREFIX_CHANNEL: ${{ secrets.PREFIX_CHANNEL }}
       run: |
         $pixi = Join-Path $env:USERPROFILE ".pixi\bin\pixi.exe"
-        & $pixi run rattler-build upload prefix --channel "$env:PREFIX_CHANNEL" --skip-existing C:\bld\win-64\*.conda
+        Get-ChildItem -Path "C:\bld\win-64" -Filter "*.conda" | ForEach-Object {
+          # ignore errors because we want to ignore duplicate packages
+          & $pixi run rattler-build upload prefix -c "$env:PREFIX_CHANNEL" $_.FullName
+        }
+        exit 0
