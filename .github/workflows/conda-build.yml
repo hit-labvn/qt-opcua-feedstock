@@ -94,64 +94,24 @@ jobs:
         FEEDSTOCK_TOKEN: ${{ secrets.FEEDSTOCK_TOKEN }}
         STAGING_BINSTAR_TOKEN: ${{ secrets.STAGING_BINSTAR_TOKEN }}
 
-    - name: Store Linux package artifact
-      if: matrix.os == 'ubuntu'
-      uses: actions/upload-artifact@v4
-      with:
-        name: conda-package-${{ matrix.CONFIG }}
-        path: build_artifacts/linux-64/*.conda
-        if-no-files-found: error
-
-    - name: Store Windows package artifact
-      if: matrix.os == 'windows'
-      uses: actions/upload-artifact@v4
-      with:
-        name: conda-package-${{ matrix.CONFIG }}
-        path: C:\bld\win-64\*.conda
-        if-no-files-found: error
-
-  upload-prefix:
-    name: Upload to prefix.dev
-    needs: build
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-    - name: Download package artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: conda-package-*
-        path: dist
-        merge-multiple: true
-
-    - name: Install pixi
-      shell: bash
-      run: |
-        curl -fsSL https://pixi.sh/install.sh | bash
-        echo "$HOME/.pixi/bin" >> "$GITHUB_PATH"
-
-    - name: Upload packages to prefix.dev
+    - name: Upload Linux package to prefix.dev
+      if: matrix.os == 'ubuntu' && github.event_name == 'release'
       shell: bash
       env:
         PREFIX_API_KEY: ${{ secrets.PREFIX_API_KEY }}
         PREFIX_CHANNEL: ${{ secrets.PREFIX_CHANNEL }}
       run: |
-        if [ -z "${PREFIX_API_KEY}" ]; then
-          echo "PREFIX_API_KEY is not set"
-          exit 1
-        fi
-        if [ -z "${PREFIX_CHANNEL}" ]; then
-          echo "PREFIX_CHANNEL is not set"
-          exit 1
-        fi
-        pixi install
-        shopt -s globstar nullglob
-        packages=(dist/**/*.conda)
-        if [ "${#packages[@]}" -eq 0 ]; then
-          echo "No .conda artifacts found"
-          exit 1
-        fi
-        pixi run rattler-build upload prefix --channel "${PREFIX_CHANNEL}" --skip-existing "${packages[@]}"
+        curl -fsSL https://pixi.sh/install.sh | bash
+        pixi="$HOME/.pixi/bin/pixi"
+        "$pixi" install
+        "$pixi" run rattler-build upload prefix --channel "${PREFIX_CHANNEL}" --skip-existing build_artifacts/linux-64/*.conda
+
+    - name: Upload Windows package to prefix.dev
+      if: matrix.os == 'windows' && github.event_name == 'release'
+      shell: pwsh
+      env:
+        PREFIX_API_KEY: ${{ secrets.PREFIX_API_KEY }}
+        PREFIX_CHANNEL: ${{ secrets.PREFIX_CHANNEL }}
+      run: |
+        $pixi = Join-Path $env:USERPROFILE ".pixi\bin\pixi.exe"
+        & $pixi run rattler-build upload prefix --channel "$env:PREFIX_CHANNEL" --skip-existing C:\bld\win-64\*.conda
