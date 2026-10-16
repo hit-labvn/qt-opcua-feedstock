@@ -199,7 +199,9 @@ static bool findServers(const char *name, UA_UInt16 port, Endpoints endpoints)
                      });
     QTimer::singleShot(30000, &loop, &QEventLoop::quit);
 
-    if (!client->findServers(QUrl(QStringLiteral("opc.tcp://localhost:%1").arg(port)))) {
+    // Not localhost: the open62541 1.3 client only tries the first address,
+    // which can be ::1 while the server only listens on IPv4 (e.g. in docker)
+    if (!client->findServers(QUrl(QStringLiteral("opc.tcp://127.0.0.1:%1").arg(port)))) {
         qCritical() << name << "- findServers() could not be dispatched";
         return false;
     }
