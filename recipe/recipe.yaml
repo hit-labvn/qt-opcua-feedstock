@@ -1,48 +1,89 @@
 schema_version: 1
 
 context:
-  version: "26.3"
-  python_min: "3.9"
+  # The version branches (6.8.3, 6.9.0, ...) only change these four lines
+  version: 6.11.2
+  # qtopcua git tag, LTS releases have a suffix, e.g. v6.8.4-lts-lgpl
+  tag: v6.11.2
+  # open62541 bundled in src/3rdparty/open62541, selects the patch below
+  open62541: 1.4.14
+  build_number: 0
+  mbedtls_version: 3.*
 
 package:
-  name: packaging
+  name: qt6-opcua
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/packaging/packaging-${{ version }}.tar.gz
-  sha256: 94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79
+  git: https://github.com/qt/qtopcua
+  tag: ${{ tag }}
+  patches:
+    # https://github.com/open62541/open62541/pull/8553, 1.3 is not affected
+    - if: open62541 is not startingwith "1.3."
+      then: patches/open62541-${{ open62541 }}-findservers-without-none-endpoint.patch
 
 build:
-  number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  number: ${{ build_number }}
+  prefix_detection:
+    ignore_binary_files: true
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - qt6-main ${{ version }}.*
+        - mbedtls ${{ mbedtls_version }}
+    - cmake
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
   host:
-    - python ${{ python_min }}.*
-    - flit-core >=3.12
-    - pip
+    - qt6-main ${{ version }}.*
+    - mbedtls ${{ mbedtls_version }}
   run:
-    - python >=${{ python_min }}
-
+    - qt6-main ${{ version }}.*
+  run_exports:
+    - ${{ pin_subpackage('qt6-opcua', upper_bound='x.x') }}
 tests:
-  - python:
-      imports:
-        - packaging
-      pip_check: true
-      python_version: ${{ python_min }}.*
+  - script:
+      - if: win
+        then:
+          - if not exist %LIBRARY_LIB%\\qt6\\bin\\Qt6OpcUa.dll exit 1
+          - if not exist %LIBRARY_BIN%\\Qt6OpcUa.dll exit 1
+  # QOpcUaClient::findServers() against a server without a SecurityPolicy#None
+  # endpoint, see test/test_qopcuaclient_findservers.cpp
+  - script:
+      - if: unix
+        then:
+          - cmake -S test -B test-build
+          - cmake --build test-build
+          - ctest --test-dir test-build --output-on-failure
+        else:
+          - cmake -G"NMake Makefiles" -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" -S test -B test-build
+          - cmake --build test-build --config Release
+          - ctest --test-dir test-build -C Release --output-on-failure
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake >=3.18
+        - openssl
+        - if: unix
+          then: make
+    files:
+      recipe:
+        - test/CMakeLists.txt
+        - test/test_qopcuaclient_findservers.cpp
+      source:
+        - src/3rdparty/open62541/open62541.c
+        - src/3rdparty/open62541/open62541.h
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
-  summary: Core utilities for Python packages
-  homepage: https://github.com/pypa/packaging
-  repository: https://github.com/pypa/packaging
-  documentation: https://packaging.pypa.io/
-
-extra:
-  recipe-maintainers:
-    - jakirkham
-    - nicoddemus
-    - matthewfeickert
-    - ofek
+  summary: Qt OPC UA module
+  description: |
+    The Qt OPC UA module implements a Qt API to interact
+    with OPC UA servers on top of the open62541 library.
+  license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+  license_file: LICENSES/
+  documentation: https://doc.qt.io/qt-6/qtopcua-index.html
+  repository: https://github.com/qt/qtopcua
