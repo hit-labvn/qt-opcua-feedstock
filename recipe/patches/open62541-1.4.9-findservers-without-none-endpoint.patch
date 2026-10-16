@@ -1,0 +1,93 @@
+From: Hao Truong <haotruong@hit-lab.vn>
+Subject: [PATCH] open62541: Allow FindServers without a SecurityPolicy#None endpoint
+
+UA_Client_findServers() and UA_Client_getEndpoints() open a SecureChannel
+without a Session (connectSecureChannel), but connectActivity() still ran
+GetEndpoints and required an endpoint usable with the client's
+SecurityPolicies. A client with only SecurityPolicy#None, as used by
+QOpcUaClient::findServers(), then failed with BadIdentityTokenRejected
+against servers that offer only secured endpoints but allow discovery over
+a None SecureChannel.
+
+Mark discovery-only connections and skip the endpoint selection for them.
+
+Backport of https://github.com/open62541/open62541/pull/8553 (1.4) to the
+open62541 1.4.9 amalgamation bundled by qtopcua.
+---
+diff --git a/src/3rdparty/open62541/open62541.c b/src/3rdparty/open62541/open62541.c
+index 4a02507..9e75aff 100644
+--- a/src/3rdparty/open62541/open62541.c
++++ b/src/3rdparty/open62541/open62541.c
+@@ -6244,6 +6244,7 @@ struct UA_Client {
+ 
+     UA_Boolean findServersHandshake;   /* Ongoing FindServers */
+     UA_Boolean endpointsHandshake;     /* Ongoing GetEndpoints */
++    UA_Boolean discoveryOnly;          /* Skip endpoint selection */
+ 
+     /* The discoveryUrl can be different from the EndpointUrl in the client
+      * configuration. The EndpointUrl is used to connect initially, then the
+@@ -60853,20 +60854,24 @@ endpointUnconfigured(const UA_EndpointDescription *endpoint) {
+ 
+ UA_Boolean
+ isFullyConnected(UA_Client *client) {
+-    /* No Session, but require one */
+-    if(client->sessionState != UA_SESSIONSTATE_ACTIVATED && !client->config.noSession)
+-        return false;
+-
+     /* No SecureChannel */
+     if(client->channel.state != UA_SECURECHANNELSTATE_OPEN)
+         return false;
+ 
++    /* FindServers handshake ongoing or not yet done */
++    if(client->findServersHandshake || client->discoveryUrl.length == 0)
++        return false;
++
++    /* Discovery services need neither an endpoint nor a Session */
++    if(client->discoveryOnly)
++        return true;
++
+     /* GetEndpoints handshake ongoing or not yet done */
+     if(client->endpointsHandshake || endpointUnconfigured(&client->endpoint))
+         return false;
+ 
+-    /* FindServers handshake ongoing or not yet done */
+-    if(client->findServersHandshake || client->discoveryUrl.length == 0)
++    /* No Session, but is required */
++    if(client->sessionState != UA_SESSIONSTATE_ACTIVATED && !client->config.noSession)
+         return false;
+ 
+     return true;
+@@ -62125,6 +62130,10 @@ connectActivity(UA_Client *client) {
+         return;
+     }
+ 
++    /* Discovery services can be called without selecting an endpoint */
++    if(client->discoveryOnly)
++        return;
++
+     /* GetEndpoints to identify the remote side and/or reset the SecureChannel
+      * with encryption */
+     if(endpointUnconfigured(&client->endpoint)) {
+@@ -62557,12 +62566,14 @@ connectSecureChannel(UA_Client *client, const char *endpointUrl) {
+     cc->noSession = true;
+     UA_String_clear(&cc->endpointUrl);
+     cc->endpointUrl = UA_STRING_ALLOC(endpointUrl);
++    client->discoveryOnly = true;
+     return connectInternal(client, false);
+ }
+ 
+ UA_StatusCode
+ __UA_Client_connect(UA_Client *client, UA_Boolean async) {
+     UA_LOCK(&client->clientMutex);
++    client->discoveryOnly = false;
+     connectInternal(client, async);
+     UA_UNLOCK(&client->clientMutex);
+     return client->connectStatus;
+@@ -62818,6 +62829,7 @@ UA_Client_startListeningForReverseConnect(UA_Client *client,
+     UA_StatusCode res = UA_STATUSCODE_BADINTERNALERROR;
+ 
+     client->connectStatus = UA_STATUSCODE_GOOD;
++    client->discoveryOnly = false;
+     client->channel.renewState = UA_SECURECHANNELRENEWSTATE_NORMAL;
+ 
+     UA_SecureChannel_init(&client->channel);
