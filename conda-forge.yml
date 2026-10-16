@@ -6,3 +6,9 @@ conda_build:
   pkg_format: '2'
 conda_install_tool: pixi
 conda_build_tool: rattler-build
+# qt6-opcua: build linux-64 and win-64 only, packages are uploaded to
+# prefix.dev by .github/workflows/release.yml instead of anaconda.org
+provider:
+  osx_64: None
+github_actions:
+  upload_packages: false

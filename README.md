@@ -13,51 +13,19 @@ Development: https://github.com/qt/qtopcua
 
 Documentation: https://doc.qt.io/qt-6/qtopcua-index.html
 
-The Qt OPC UA module implements a Qt API to interact 
+The Qt OPC UA module implements a Qt API to interact
 with OPC UA servers on top of the open62541 library.
 
 Current build status
 ====================
 
 
-<table>
-    
-  <tr>
-    <td>Azure</td>
+<table><tr>
+    <td>GitHub Actions</td>
     <td>
-      <details>
-        <summary>
-          <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=None&branchName=main">
-            <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/qt-opcua-feedstock?branchName=main">
-          </a>
-        </summary>
-        <table>
-          <thead><tr><th>Variant</th><th>Status</th></tr></thead>
-          <tbody><tr>
-              <td>linux_64</td>
-              <td>
-                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=None&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/qt-opcua-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_64_" alt="variant">
-                </a>
-              </td>
-            </tr><tr>
-              <td>osx_64</td>
-              <td>
-                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=None&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/qt-opcua-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_64_" alt="variant">
-                </a>
-              </td>
-            </tr><tr>
-              <td>win_64</td>
-              <td>
-                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=None&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/qt-opcua-feedstock?branchName=main&jobName=win&configuration=win%20win_64_" alt="variant">
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </details>
+      <a href="https://github.com/conda-forge/qt-opcua-feedstock/actions/workflows/conda-build.yml">
+        <img src="https://github.com/conda-forge/qt-opcua-feedstock/actions/workflows/conda-build.yml/badge.svg?event=push&branch=main">
+      </a>
     </td>
   </tr>
 </table>
@@ -79,31 +47,73 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `qt6-opcua` can be installed with `conda`:
+How to use
+----------
+
+<details>
+<summary>With conda</summary>
 
 ```
 conda install qt6-opcua
 ```
 
-or with `mamba`:
+</details>
+
+<details>
+<summary>With mamba</summary>
 
 ```
 mamba install qt6-opcua
 ```
 
-It is possible to list all of the versions of `qt6-opcua` available on your platform with `conda`:
+</details>
+
+<details>
+<summary>With pixi</summary>
+
+```
+# for adding to your local project
+pixi add qt6-opcua
+# for installing globally
+pixi global install qt6-opcua
+```
+
+</details>
+
+Search package versions
+-----------------------
+
+It is possible to list all of the versions of `qt6-opcua` available on your platform:
+
+<details>
+<summary>With conda</summary>
 
 ```
 conda search qt6-opcua --channel conda-forge
 ```
 
-or with `mamba`:
+</details>
+
+<details>
+<summary>With mamba</summary>
 
 ```
 mamba search qt6-opcua --channel conda-forge
 ```
 
-Alternatively, `mamba repoquery` may provide more information:
+</details>
+
+<details>
+<summary>With pixi</summary>
+
+```
+pixi search qt6-opcua --channel conda-forge
+```
+
+</details>
+
+<details>
+<summary>With mamba repoquery, which may provide more information</summary>
 
 ```
 # Search all versions available on your platform:
@@ -115,6 +125,8 @@ mamba repoquery whoneeds qt6-opcua --channel conda-forge
 # List dependencies of `qt6-opcua`:
 mamba repoquery depends qt6-opcua --channel conda-forge
 ```
+
+</details>
 
 
 About conda-forge
