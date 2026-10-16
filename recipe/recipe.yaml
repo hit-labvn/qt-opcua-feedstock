@@ -2,12 +2,12 @@ schema_version: 1
 
 context:
   # The version branches (6.8.3, 6.9.0, ...) only change these four lines
-  version: 6.11.2
+  version: 6.11.0
   # qtopcua git tag, LTS releases have a suffix, e.g. v6.8.4-lts-lgpl
-  tag: v6.11.2
+  tag: v6.11.0
   # open62541 bundled in src/3rdparty/open62541, selects the patch below
   open62541: 1.4.14
-  build_number: 0
+  build_number: 1
   mbedtls_version: 3.*
 
 package:
