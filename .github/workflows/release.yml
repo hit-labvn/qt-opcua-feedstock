@@ -72,7 +72,10 @@ jobs:
         PYTHONUNBUFFERED: 1
         UPLOAD_PACKAGES: 'False'
 
+    # On Windows, run_win_build.bat already installed pixi to ~/.pixi/bin and
+    # setup-pixi refuses to overwrite it. The linux build runs in docker.
     - name: Install pixi
+      if: matrix.os == 'ubuntu'
       uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
       with:
         run-install: false
@@ -88,6 +91,7 @@ jobs:
         shopt -s nullglob
         if [[ "${RUNNER_OS}" == "Windows" ]]; then
           BLD="$(cygpath -u "${BLD}")"
+          export PATH="${HOME}/.pixi/bin:${PATH}"
         fi
         packages=("${BLD%/}/${SUBDIR}"/*.conda)
         if (( ${#packages[@]} == 0 )); then
